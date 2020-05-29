@@ -27,8 +27,6 @@ validParams<NeuralNetwork>()
   params.template addParam<MooseEnum>("activation_function",
                                       activationFunctionEnum,
                                       "Name of the hidden neuron activation function");
-  // params.addRequiredParam<std::vector<NonlinearVariableName>>(
-  //     "variables", "List of non-linear variables to be used as input");
   params.addRequiredCoupledVar("variable", "Name of the variable this object operates on");
   return params;
 }
@@ -42,7 +40,6 @@ NeuralNetwork::NeuralNetwork(const InputParameters & parameters)
     _weights_file(getParam<FileName>("weights_file")),
     _activation_function(
         getParam<MooseEnum>("activation_function").template getEnum<ActivationFunction>()),
-    // _variables(getParam<std::vector<NonlinearVariableName>>("variables"))
     MooseVariableInterface<Real>(this,
                                  false,
                                  "variable",
