@@ -254,7 +254,7 @@
     y1 = 0
     radius = 100
     invalue = '1e-4'
-    outvalue = 0.02#'0.0033'
+    outvalue = 0.02
   [../]
 
 #Cr INITIAL CONDITIONS
@@ -266,7 +266,7 @@
     y1 = 0
     radius = 100
     invalue = '0.19'
-    outvalue = 0.003#'0.003342064232754377'
+    outvalue = 0.003
   [../]
 [./c_Cr_metal_inital]
   type = SmoothCircleIC
@@ -285,8 +285,8 @@
   x1 = 0
   y1 = 0
   radius = 100
-  invalue = '0.042'
-  outvalue = 0.003#'0.0033'
+  invalue = 0.042
+  outvalue = 0.003
 [../]
 
 
@@ -329,10 +329,7 @@
       function = '6*interface_energy_sigma/interface_thickness_l'
     [../]
 
-    # [./test]
-    #   type =
-    # [../]
-    #SWITCHING FUNCTIONS
+        #SWITCHING FUNCTIONS
     [./h_metal]
       type = SwitchingFunctionMaterial
       function_name = 'h_metal'
@@ -341,12 +338,7 @@
       outputs = 'exodus'
       output_properties = 'h_metal'
     [../]
-    # [./h_metal  ]
-    #   type = DerivativeParsedMaterial
-    #   args = eta
-    #   f_name = 'h_metal'
-    #   function = 'eta^2/(eta^2+(1-eta)^2)'
-    # [../]
+
     #DOUBLE WELL eta
     [./g]
       type = DerivativeParsedMaterial
@@ -362,18 +354,15 @@
       f_name = f_metal
       args = 'eta w_Ni c_Ni c_Ni_metal w_Cr c_Cr_metal c_Cr'
       material_property_names = 'E0_Ni_metal E0_N_metal E0_Cr_metal k_metal kB T Va'
-      function = '(E0_Ni_metal*c_Ni_metal + E0_Cr_metal*c_Cr + E0_N_metal*(1-c_Ni_metal -c_Cr_metal) +k_metal*kB*T*(c_Ni_metal*log(c_Ni_metal) + c_Cr_metal*log(c_Cr_metal) + (1-c_Ni_metal-c_Cr_metal)*log(1-c_Ni_metal-c_Cr_metal) ) )' #'/Va'
+      function = '(E0_Ni_metal*c_Ni_metal + E0_Cr_metal*c_Cr + E0_N_metal*(1-c_Ni_metal -c_Cr_metal) +k_metal*kB*T*(c_Ni_metal*log(c_Ni_metal) + c_Cr_metal*log(c_Cr_metal) + (1-c_Ni_metal-c_Cr_metal)*log(1-c_Ni_metal-c_Cr_metal) ) )'
       outputs = exodus
-      # function = '0.5*1000*(c_Ni_metal-0.98)^2'
     [../]
     [./f_melt]
       type = DerivativeParsedMaterial
       f_name = f_melt
       args = 'eta w_Ni c_Ni c_Ni_melt c_Cr c_Cr_melt w_Cr'
       material_property_names = 'E0_Ni_melt E0_N_melt E0_Cr_melt k_melt kB T Va'
-      function = '(E0_Ni_melt*c_Ni_melt + E0_Cr_melt*c_Cr_melt + E0_N_melt*(1-c_Ni_melt -c_Cr_melt) +k_melt*kB*T*(c_Ni_melt*log(c_Ni_melt) + c_Cr_melt*log(c_Cr_melt) + (1-c_Ni_melt-c_Cr_melt)*log(1-c_Ni_melt-c_Cr_melt) ) )' #/Va'
-
-      # function = '(0.5*100*(c_Ni_melt - 0.2)^2)/Va'
+      function = '(E0_Ni_melt*c_Ni_melt + E0_Cr_melt*c_Cr_melt + E0_N_melt*(1-c_Ni_melt -c_Cr_melt) +k_melt*kB*T*(c_Ni_melt*log(c_Ni_melt) + c_Cr_melt*log(c_Cr_melt) + (1-c_Ni_melt-c_Cr_melt)*log(1-c_Ni_melt-c_Cr_melt) ) )'
       outputs = exodus
     [../]
 
@@ -424,16 +413,6 @@
 
 
 []
-#
-# [Preconditioning]
-#   [./full]
-#     type = SMP
-#     full = true
-#     solve_type = 'PJFNK'
-#     petsc_options_iname = '-pc_type -sub_pc_type   -sub_pc_factor_shift_type -pc_asm_overlap -ksp_gmres_restart -sub_ksp_type'
-#     petsc_options_value = 'asm       lu            nonzero                   2               31                 preonly'
-#   [../]
-# []
 
 [Preconditioning]
   [./SMP]
@@ -448,8 +427,6 @@
   petsc_options_iname = '-pc_type -pc_factor_mat_solver_package'
   petsc_options_value = 'lu superlu_dist'
   l_max_its = 30
-  # l_max_its = 30
-  # nl_max_its = 20
   l_tol = 1e-10
   nl_rel_tol = 1e-12
   nl_abs_tol = 1e-8
@@ -459,7 +436,7 @@
   scaling_group_variables = eta
   # scaling_group_variables = ' w_Ni w_Cr; eta'
   dtmax = 500.0
-  end_time = 8.6e4 #24 hrs = 8.6400e4
+  end_time = 8.6e4
   [./TimeStepper]
     type = IterationAdaptiveDT
     dt = 1e-5
@@ -472,11 +449,6 @@
 []
 
 [Outputs]
-  # [./exodus]
-  #   type = Exodus
-  #   interval = 1000
-  # [../]
   exodus = true
-  # csv = true
   perf_graph = true
 []

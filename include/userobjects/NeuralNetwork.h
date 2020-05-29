@@ -6,19 +6,17 @@
 /*                        ALL RIGHTS RESERVED                         */
 /**********************************************************************/
 
-
 #pragma once
 #include "NodalUserObject.h"
 #include "MooseVariableInterface.h"
 
-//forward declarations
+// forward declarations
 class NeuralNetwork;
 
 template <>
 InputParameters validParams<NodalUserObject>();
 
-class NeuralNetwork: public NodalUserObject,
-                     public MooseVariableInterface<Real>
+class NeuralNetwork : public NodalUserObject, public MooseVariableInterface<Real>
 {
 public:
   static InputParameters validParams();
@@ -40,17 +38,15 @@ protected:
   unsigned int _N;
 
   FileName _weights_file;
-  std::vector< NonlinearVariableName> _variables;
+  std::vector<NonlinearVariableName> _variables;
   MooseVariable & _var;
   const VariableValue & _u;
-  std::vector< const VariableValue *> _inputs;
+  std::vector<const VariableValue *> _inputs;
   std::vector<MooseVariableFEBase *> _fe_vars;
 
-  std::vector<DenseMatrix <Real>> _weights;
-  std::vector< DenseMatrix <Real>> _bias;
+  std::vector<DenseMatrix<Real>> _weights;
+  std::vector<DenseMatrix<Real>> _bias;
   std::set<std::string> _depend_vars;
-  std::vector<std::string> _ic_dependencies;
-  // std::vector<>
 
   enum class ActivationFunction
   {
@@ -59,5 +55,4 @@ protected:
     TANH,
     LINEAR
   } _activation_function;
-
 };
