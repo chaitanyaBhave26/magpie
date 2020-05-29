@@ -26,10 +26,10 @@
     H = 20
     activation_function = "SIGMOID"
     weights_file = "/home/chaitanya/projects/moose/python/ExodusNNTrainer/moose_NN_file.txt"
-    variables = 'c_Ni eta'
+    # variables = 'c_Ni eta'
     variable = 'c_Ni eta'
     N = 2
-    IC_dependencies = 'eta_metal_inital c_global_inital'
+    # IC_dependencies = 'eta_metal_inital c_global_inital'
   [../]
 []
 
