@@ -468,7 +468,7 @@
     growth_factor = 1.1
     cutback_factor = 0.8
   [../]
-  num_steps = 1
+  num_steps = 0
 []
 
 [Outputs]
