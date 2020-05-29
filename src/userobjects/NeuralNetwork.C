@@ -220,10 +220,7 @@ NeuralNetwork::eval( ) const
           }
           std::cout << "\n After SIGMOID feed forward: ";
           std::cout << input.m() << ", " << input.n();
-
-
-
-    }
+     }
   }
 
 
