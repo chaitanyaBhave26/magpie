@@ -28,7 +28,6 @@ public:
   virtual void execute() override;
   virtual void finalize() override;
   virtual void threadJoin(const UserObject & y) override;
-  void getWeights();
   // void NN_eval();
   const std::set<std::string> & getRequestedItems() const;
   // const std::set<std::string> & getRequestedItems() override;
@@ -46,6 +45,7 @@ protected:
   ///@}
   // SystemBase & _sys;
   // virtual unsigned int map_MOOSE2Ext(const Node & MOOSEnode) const;
+  void setWeights();
 
   unsigned int _H;
   unsigned int _D_in;
@@ -63,21 +63,23 @@ protected:
   // const std::set<std::string> _var_names;
   std::vector<MooseVariableFEBase *> _fe_vars;
 
-  std::vector<std::vector <std::vector <Real>>> _weights;
-  std::vector< std::vector <Real>> _bias;
+  std::vector<DenseMatrix <Real>> _weights;
+  std::vector< DenseMatrix <Real>> _bias;
   std::set<std::string> _depend_vars;
   std::vector<std::string> _ic_dependencies;
+  // std::vector<>
 
   enum class ActivationFunction
   {
     SIGMOID,
     SOFTSIGN,
-    TANH
+    TANH,
+    LINEAR
   } _activation_function;
 
-private:
-  void ApplyLinearInput(std::vector<Real> & input,std::vector<Real> & output) const;
-  void ApplyLinearOutput( std::vector<Real> & input,Real & output) const;
+// private:
+//   void ApplyLinearInput(std::vector<Real> & input,std::vector<Real> & output) const;
+//   void ApplyLinearOutput( std::vector<Real> & input,Real & output) const;
   // std::vector<Real> _bias_input;
   // std::vector<Real> _bias_output;
   // std::vect<
