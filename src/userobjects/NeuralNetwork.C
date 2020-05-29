@@ -32,7 +32,7 @@ validParams<NeuralNetwork>()
   params.addRequiredParam<unsigned int>("D_in","Number of inputs to neural net");
   params.addRequiredParam<unsigned int>("D_out","Number of outputs from neural net");
   params.addRequiredParam<FileName>("weights_file","Name of the file with the neuron weights");
-  MooseEnum activationFunctionEnum("SIGMOID TANH","SIGMOID");
+  MooseEnum activationFunctionEnum("SIGMOID SOFTSIGN TANH LINEAR","SIGMOID");
   params.template addParam<MooseEnum>("activation_function",activationFunctionEnum,"Name of the hidden neuron activation function");
   params.addRequiredParam<std::vector <NonlinearVariableName>>("variables","List of non-linear variables to be used as input");
   params.addRequiredCoupledVar("variable","Name of the variable this object operates on");
@@ -62,7 +62,7 @@ NeuralNetwork::NeuralNetwork(const InputParameters & parameters)
 {
 
   //open the NN weights file
-  getWeights();
+  setWeights();
   // unsigned int n_variables = _variables.size();
   _inputs.resize(_D_in);
   _depend_vars.insert(name());
@@ -87,10 +87,10 @@ NeuralNetwork::NeuralNetwork(const InputParameters & parameters)
 const std::set<std::string> &
 NeuralNetwork::getRequestedItems()  const
 {
-  std::cout << "Someone asked for this";
+  // std::cout << "Someone asked for this";
   return _depend_vars;
 }
-void NeuralNetwork::getWeights()
+void NeuralNetwork::setWeights()
   {
     std::ifstream ifile;
     std::string line;
@@ -104,52 +104,78 @@ void NeuralNetwork::getWeights()
 
     // _weights.resize(_N);
 
-    std::vector<std::vector <Real>> _W_input(_H,std::vector <Real> (_D_in,0));
-    std::vector<Real> _bias_input(_H,0);
-    std::vector<std::vector <Real>> _W_output(_D_out,std::vector <Real> (_H,0));
-    std::vector<Real> _bias_output(_D_out);
+    DenseMatrix<Real> _W_input(_H,_D_in);
+    DenseMatrix<Real> _bias_input(1,_H);
+    DenseMatrix<Real> _W_output(_D_out,_H);
+    DenseMatrix<Real> _bias_output(1,_D_out);
 
-
-
-    while(std::getline(ifile,line) )
+    //Read input LINEAR neuron weights
+    for (std::size_t i =0; i < _H; i++)
       {
-          Real val = std::stod(line);
-          if( line_no < _H*_D_in)
-            {
-              int j = line_no%_D_in;
-              int i = (line_no - j)/_D_in;
+        for (std::size_t j=0; j < _D_in; j++)
+          {
+            if (!(ifile >> _W_input(i,j) ) )
+              mooseError("Error reading weights from file",_weights_file);
 
-              _W_input[i][j] = val;
-            }
-          else if( line_no < _H*_D_in + _H)
-            {
-              int i = line_no - _H*_D_in;
-              _bias_input[i] = val;
-            }
-            else if( line_no < _H*_D_in + _H + _H*_D_out)
-              {
-                int temp = line_no -_H*_D_in - _H;
-                int j = temp%_D_out;
-                int i = (temp - j)/_D_out;
-                _W_output[j][i] = val;
-                // std::cout << _W_output[j][i] << "\n";
-              }
-            else
-            {
-               int temp = line_no < _H*_D_in + _H + _H*_D_out;
-               _bias_output[temp] = val;
-            }
-          // std::istringstream iss(line);
-
-
-          // std::cout << line;
-          line_no ++;
+          }
       }
-
+    for (std::size_t i =0; i < _H; i++)
+      {
+        if (!(ifile >> _bias_input(0,i) ))
+          mooseError("Error reading input bias from file",_weights_file);
+      }
     _weights.push_back(_W_input);
-    _weights.push_back(_W_output);
     _bias.push_back(_bias_input);
+
+    //CHECK if hidden neuron type has weights
+    switch (_activation_function)
+    {
+      case ActivationFunction::LINEAR:
+        for (int n =0; n < _N; ++n)         //For each hidden layer
+          {
+            DenseMatrix<Real> _W_hidden(_H,_H);
+            DenseMatrix<Real> _bias_hidden(1,_H);
+
+            for (std::size_t i =0; i < _H; i++)
+              {
+                for (std::size_t j=0; j < _H; j++)
+                  {
+                    if (!(ifile >> _W_hidden(i,j) ) )
+                      mooseError("Error reading weights from file",_weights_file);
+
+                  }
+              }
+            for (std::size_t i =0; i < _H; i++)
+              {
+                if (!(ifile >> _bias_hidden(0,i) ))
+                  mooseError("Error reading input bias from file",_weights_file);
+              }
+            _weights.push_back(_W_hidden);
+            _bias.push_back(_bias_hidden);
+
+          }
+
+
+    }
+
+    //Read OUTPUT LINEAR neuron weights
+    for (unsigned int i =0; i < _D_out; i++)
+      {
+        for (unsigned int j=0; j < _H; j++)
+          {
+            if (!(ifile >> _W_output(i,j) ) )
+              mooseError("Error reading weights from file",_weights_file);
+
+          }
+      }
+    for (unsigned int i =0; i < _D_out; i++)
+      {
+        if (!(ifile >> _bias_output(0,i) ))
+          mooseError("Error reading input bias from file",_weights_file);
+      }
+    _weights.push_back(_W_output);
     _bias.push_back(_bias_output);
+
   }
 
 
@@ -184,88 +210,80 @@ NeuralNetwork::eval( ) const
 {
 
   // NN_eval();
-  std::vector<Real> ip_vect;
-  std::vector<Real> lin_output;
-  for (int i =0; i<_D_in; ++i)
-    {
-      auto *temp = _inputs[i];
-      ip_vect.push_back(temp[0][0]);
-    }
-  ApplyLinearInput(ip_vect,lin_output);
-
-  //Apply sigmoids
-  for (int j=0; j < _N; ++j)
-  {
-    // std::cout << "Layer" << j << ":\n";
-    switch (_activation_function)
-    {
-      case ActivationFunction::SIGMOID:
-        for (int i =0; i < _H; ++i)
-          {
-            Real temp = 1/(1 + std::exp(-1*lin_output[i]) );
-            lin_output[i] = temp;
-            // std::cout << temp << "\t";
-          }
-          // std::cout << "\n";
-    }
-  }
-
-  Real final_output;
-  ApplyLinearOutput(lin_output,final_output);
-
-
-  // return  *temp[0];
-  return final_output;
+  // std::vector<Real> ip_vect;
+  // std::vector<Real> lin_output;
+  // for (int i =0; i<_D_in; ++i)
+  //   {
+  //     auto *temp = _inputs[i];
+  //     ip_vect.push_back(temp[0][0]);
+  //   }
+  // ApplyLinearInput(ip_vect,lin_output);
+  //
+  // //Apply sigmoids
+  // for (int j=0; j < _N; ++j)
+  // {
+  //   // std::cout << "Layer" << j << ":\n";
+  //   switch (_activation_function)
+  //   {
+  //     case ActivationFunction::SIGMOID:
+  //       for (int i =0; i < _H; ++i)
+  //         {
+  //           Real temp = 1/(1 + std::exp(-1*lin_output[i]) );
+  //           lin_output[i] = temp;
+  //           // std::cout << temp << "\t";
+  //         }
+  //     case ActivationFunction::TANH:
+  //       std::cout << "Not yet implemented";
+  //         // std::cout << "\n";
+  //   }
+  // }
+  //
+  // Real final_output;
+  // ApplyLinearOutput(lin_output,final_output);
+  // return final_output;
+  return 1.0;
 }
 
-void
-NeuralNetwork::ApplyLinearInput( std::vector<Real> & input,std::vector<Real> & output) const
-  {
-    // std::cout << "Inputs " << input.size() << "\n";
-    output.resize(_H);
-    // Output = Input*Weights
-    for (int i=0; i< _H; ++i)
-      {
-        Real temp = 0;
-        for (int j = 0; j< _D_in; ++j)
-          {
-            temp+=input[j]*_weights[0][i][j];
-          }
-        output[i] = temp + _bias[0][i];
-
-      }
-
-  }
-
-void
-NeuralNetwork::ApplyLinearOutput( std::vector<Real> & input,Real & output) const
-  {
-    // std::cout << "Inputs " << input.size() << "\n";
-    if (! (_D_out == 1) )
-      {
-        mooseError("No implementation for an NN with more than 1 outputs yet");
-      }
-    // Output = Input*Weights
-    for (int i=0; i< _H; ++i)
-      {
-        output+=input[i]*_weights[1][0][i];
-
-      }
-      output += _bias[1][0];
-      if (output >= 1.0)
-        {
-          output = 1.0 - 1e-3;
-        }
-      else if (output <= 0.0)
-        {
-          output = 1e-3;
-        }
-  }
-
-// void NeuralNetwork::NN_eval()
-// {
+// void
+// NeuralNetwork::ApplyLinearInput( std::vector<Real> & input,std::vector<Real> & output) const
+//   {
+//     // std::cout << "Inputs " << input.size() << "\n";
+//     output.resize(_H);
+//     // Output = Input*Weights
+//     for (int i=0; i< _H; ++i)
+//       {
+//         Real temp = 0;
+//         for (int j = 0; j< _D_in; ++j)
+//           {
+//             temp+=input[j]*_weights[0][i][j];
+//           }
+//         output[i] = temp + _bias[0][i];
 //
-//   // std::cout << temp[0][0] << "\n";
-//   // return 0.0;
+//       }
 //
-// }
+//   }
+//
+// void
+// NeuralNetwork::ApplyLinearOutput( std::vector<Real> & input,Real & output) const
+//   {
+//     // std::cout << "Inputs " << input.size() << "\n";
+//     if (! (_D_out == 1) )
+//       {
+//         mooseError("No implementation for an NN with more than 1 outputs yet");
+//       }
+//     // Output = Input*Weights
+//     for (int i=0; i< _H; ++i)
+//       {
+//         output+=input[i]*_weights[1][0][i];
+//
+//       }
+//       output += _bias[1][0];
+//       if (output >= 1.0)
+//         {
+//           output = 1.0 - 1e-3;
+//         }
+//       else if (output <= 0.0)
+//         {
+//           output = 1e-3;
+//         }
+//   }
