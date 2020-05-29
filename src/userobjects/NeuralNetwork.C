@@ -44,7 +44,7 @@ NeuralNetwork::NeuralNetwork(const InputParameters & parameters)
     MooseVariableInterface<Real>(this,
                                false,
                                "variables",
-                               Moose::VarKindType::VAR_ANY,
+                                  Moose::VarKindType::VAR_ANY,
                                Moose::VarFieldType::VAR_FIELD_STANDARD),
     _var(*mooseVariable()),
     _u(_var.dofValues()),
@@ -194,15 +194,8 @@ NeuralNetwork::eval( ) const
     }
 
 //Feed forward input linear neurons
-  std::cout << "Input state: ";
-  std::cout << input.m() << ", " << input.n() << "\n " << _weights[0].m() << ", " << _weights[0].n();
-
-  input.left_multiply_transpose(_weights[0]);
+  input.right_multiply_transpose(_weights[0]);
   input.add(1,_bias[0]);
-
-  std::cout << "\n After input feed forward: ";
-  std::cout << input.m() << ", " << input.n();
-
 
 //Feed forward hidden neurons
   for (int n=0; n < _N; ++n)
@@ -218,60 +211,13 @@ NeuralNetwork::eval( ) const
                 input(i,j)=temp;
               }
           }
-          std::cout << "\n After SIGMOID feed forward: ";
-          std::cout << input.m() << ", " << input.n();
-     }
+    }
   }
 
 
   //feed forward output LINEAR layer
   auto i = _weights.size() -1;
-  std::cout << input.m() << ", " << input.n() << "\n " << _weights[i].m() << ", " << _weights[i].n();
-  input.left_multiply_transpose(_weights[i]);
+  input.right_multiply_transpose(_weights[i]);
   input.add(1,_bias[i]);
   return input(0,0);
 }
-
-// void
-// NeuralNetwork::ApplyLinearInput( std::vector<Real> & input,std::vector<Real> & output) const
-//   {
-//     // std::cout << "Inputs " << input.size() << "\n";
-//     output.resize(_H);
-//     // Output = Input*Weights
-//     for (int i=0; i< _H; ++i)
-//       {
-//         Real temp = 0;
-//         for (int j = 0; j< _D_in; ++j)
-//           {
-//             temp+=input[j]*_weights[0][i][j];
-//           }
-//         output[i] = temp + _bias[0][i];
-//
-//       }
-//
-//   }
-//
-// void
-// NeuralNetwork::ApplyLinearOutput( std::vector<Real> & input,Real & output) const
-//   {
-//     // std::cout << "Inputs " << input.size() << "\n";
-//     if (! (_D_out == 1) )
-//       {
-//         mooseError("No implementation for an NN with more than 1 outputs yet");
-//       }
-//     // Output = Input*Weights
-//     for (int i=0; i< _H; ++i)
-//       {
-//         output+=input[i]*_weights[1][0][i];
-//
-//       }
-//       output += _bias[1][0];
-//       if (output >= 1.0)
-//         {
-//           output = 1.0 - 1e-3;
-//         }
-//       else if (output <= 0.0)
-//         {
-//           output = 1e-3;
-//         }
-//   }
