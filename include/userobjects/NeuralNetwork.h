@@ -38,12 +38,8 @@ protected:
   unsigned int _N;
 
   FileName _weights_file;
-  std::vector<NonlinearVariableName> _variables;
-  MooseVariable & _var;
-  const VariableValue & _u;
   std::vector<const VariableValue *> _inputs;
   std::vector<MooseVariableFEBase *> _fe_vars;
-
   std::vector<DenseMatrix<Real>> _weights;
   std::vector<DenseMatrix<Real>> _bias;
   std::set<std::string> _depend_vars;

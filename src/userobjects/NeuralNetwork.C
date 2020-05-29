@@ -27,8 +27,8 @@ validParams<NeuralNetwork>()
   params.template addParam<MooseEnum>("activation_function",
                                       activationFunctionEnum,
                                       "Name of the hidden neuron activation function");
-  params.addRequiredParam<std::vector<NonlinearVariableName>>(
-      "variables", "List of non-linear variables to be used as input");
+  // params.addRequiredParam<std::vector<NonlinearVariableName>>(
+  //     "variables", "List of non-linear variables to be used as input");
   params.addRequiredCoupledVar("variable", "Name of the variable this object operates on");
   return params;
 }
@@ -42,14 +42,12 @@ NeuralNetwork::NeuralNetwork(const InputParameters & parameters)
     _weights_file(getParam<FileName>("weights_file")),
     _activation_function(
         getParam<MooseEnum>("activation_function").template getEnum<ActivationFunction>()),
-    _variables(getParam<std::vector<NonlinearVariableName>>("variables")),
+    // _variables(getParam<std::vector<NonlinearVariableName>>("variables"))
     MooseVariableInterface<Real>(this,
                                  false,
-                                 "variables",
+                                 "variable",
                                  Moose::VarKindType::VAR_ANY,
                                  Moose::VarFieldType::VAR_FIELD_STANDARD),
-    _var(*mooseVariable()),
-    _u(_var.dofValues()),
     _fe_vars(getCoupledMooseVars())
 {
 
@@ -57,7 +55,7 @@ NeuralNetwork::NeuralNetwork(const InputParameters & parameters)
   setWeights();
   _inputs.resize(_D_in);
   _depend_vars.insert(name());
-  for (unsigned int i = 0; i < _fe_vars.size(); ++i)
+  for (unsigned int i = 0; i < _D_in; ++i)
   {
     auto temp = _fe_vars[i]->name();
     _depend_vars.insert(temp);
@@ -145,7 +143,9 @@ NeuralNetwork::setWeights()
   _bias.push_back(_bias_output);
 }
 
-void NeuralNetwork::finalize(/* arguments */) { /* code */ }
+void NeuralNetwork::finalize(/* arguments */)
+{ /* code */
+}
 
 void NeuralNetwork::execute(/* arguments */) {}
 
