@@ -36,6 +36,7 @@ validParams<NeuralNetwork>()
   params.template addParam<MooseEnum>("activation_function",activationFunctionEnum,"Name of the hidden neuron activation function");
   params.addRequiredParam<std::vector <NonlinearVariableName>>("variables","List of non-linear variables to be used as input");
   params.addRequiredCoupledVar("variable","Name of the variable this object operates on");
+  params.addParam<std::vector<std::string>>("IC_dependencies","List of ICs that need to be executed before this UO");
   return params;
 }
 
@@ -48,6 +49,7 @@ NeuralNetwork::NeuralNetwork(const InputParameters & parameters)
     _weights_file(getParam<FileName>("weights_file")),
     _activation_function(getParam<MooseEnum>("activation_function").template getEnum<ActivationFunction>() ),
     _variables(getParam<std::vector <NonlinearVariableName>>("variables")  ),
+    _ic_dependencies(getParam<std::vector<std::string>>("IC_dependencies")),
     MooseVariableInterface<Real>(this,
                                false,
                                "variables",
@@ -55,7 +57,6 @@ NeuralNetwork::NeuralNetwork(const InputParameters & parameters)
                                Moose::VarFieldType::VAR_FIELD_STANDARD),
     _var(*mooseVariable()),
     _u(_var.dofValues()),
-
     // _var_vals(coupledValue("variable",1)),
     _fe_vars(getCoupledMooseVars())
 {
@@ -64,11 +65,16 @@ NeuralNetwork::NeuralNetwork(const InputParameters & parameters)
   getWeights();
   // unsigned int n_variables = _variables.size();
   _inputs.resize(_D_in);
+  _depend_vars.insert(name());
   for(unsigned int i =0; i < _fe_vars.size(); ++i)
     {
       auto temp = _fe_vars[i]->name();
-      _supplied_vars.insert(temp);
+      _depend_vars.insert(temp);
       _inputs[i] = &coupledValue("variable",i) ;
+    }
+  for(unsigned int i = 0; i < _ic_dependencies.size(); ++i)
+    {
+      _depend_vars.insert(_ic_dependencies[i]);
     }
   // _var(_sys.getActualFieldVariable(parameters.get<THREAD_ID>("_tid"), _variables[0]
                                         // );
@@ -78,11 +84,12 @@ NeuralNetwork::NeuralNetwork(const InputParameters & parameters)
 
 }
 //
-// const std::set<std::string> &
-// NeuralNetwork::getRequestedItems()
-// {
-//   return _supplied_vars;
-// }
+const std::set<std::string> &
+NeuralNetwork::getRequestedItems()  const
+{
+  std::cout << "Someone asked for this";
+  return _depend_vars;
+}
 void NeuralNetwork::getWeights()
   {
     std::ifstream ifile;

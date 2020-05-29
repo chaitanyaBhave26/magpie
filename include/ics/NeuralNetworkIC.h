@@ -11,7 +11,7 @@ public:
   NeuralNetworkIC(const InputParameters & parameters);
 
   virtual Real value(const Point & p);
-
+  virtual const std::set<std::string> & getRequestedItems() override;
 
   // virtual void initialSetup();
 

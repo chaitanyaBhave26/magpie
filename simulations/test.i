@@ -29,6 +29,7 @@
     variables = 'c_Ni eta'
     variable = 'c_Ni eta'
     N = 2
+    IC_dependencies = 'eta_metal_inital c_global_inital'
   [../]
 []
 
@@ -203,7 +204,13 @@
 []
 
 [ICs]
+  [./c_ni_metal_initial]
+    type = NeuralNetworkIC
+    variable = c_Ni_metal
+    InputVariables = 'c_Ni'
+    NeuralNetwork_user_object = neuron_test
 
+  [../]
   [./eta_metal_inital]
     type = SmoothCircleIC
     variable = 'eta'
@@ -281,13 +288,7 @@
   invalue = '0.042'
   outvalue = 0.003#'0.0033'
 [../]
-[./c_ni_metal_initial]
-  type = NeuralNetworkIC
-  variable = c_Ni_metal
-  InputVariables = 'c_Ni'
-  NeuralNetwork_user_object = neuron_test
 
-[../]
 
 []
 
