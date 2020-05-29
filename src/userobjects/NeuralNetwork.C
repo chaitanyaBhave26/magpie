@@ -1,11 +1,10 @@
-//* This file is part of the MOOSE framework
-//* https://www.mooseframework.org
-//*
-//* All rights reserved, see COPYRIGHT for full restrictions
-//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
-//*
-//* Licensed under LGPL 2.1, please see LICENSE for details
-//* https://www.gnu.org/licenses/lgpl-2.1.html
+/**********************************************************************/
+/*                     DO NOT MODIFY THIS HEADER                      */
+/* MAGPIE - Mesoscale Atomistic Glue Program for Integrated Execution */
+/*                                                                    */
+/*            Copyright 2017 Battelle Energy Alliance, LLC            */
+/*                        ALL RIGHTS RESERVED                         */
+/**********************************************************************/
 
 #include "NeuralNetwork.h"
 #include "MooseEnum.h"
@@ -181,6 +180,7 @@ NeuralNetwork::eval() const
     switch (_activation_function)
     {
       case ActivationFunction::SIGMOID:
+      {
         for (std::size_t i = 0; i < input.m(); ++i)
         {
           for (std::size_t j = 0; j < input.n(); ++j)
@@ -189,12 +189,23 @@ NeuralNetwork::eval() const
             input(i, j) = temp;
           }
         }
+      }
+      case ActivationFunction::TANH:
+      {
+        for (std::size_t i = 0; i < input.m(); ++i)
+        {
+          for (std::size_t j = 0; j < input.n(); ++j)
+          {
+            Real temp = std::tanh(input(i, j));
+            input(i, j) = temp;
+          }
+        }
+      }
     }
-  }
 
-  // feed forward output LINEAR layer
-  auto i = _weights.size() - 1;
-  input.right_multiply_transpose(_weights[i]);
-  input.add(1, _bias[i]);
-  return input(0, 0);
-}
+    // feed forward output LINEAR layer
+    auto i = _weights.size() - 1;
+    input.right_multiply_transpose(_weights[i]);
+    input.add(1, _bias[i]);
+    return input(0, 0);
+  }
