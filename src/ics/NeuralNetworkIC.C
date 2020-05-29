@@ -27,6 +27,16 @@ NeuralNetworkIC::NeuralNetworkIC(const InputParameters & parameters)
     _nn_obj(getUserObject<NeuralNetwork>("NeuralNetwork_user_object")),
     _var_names(getParam<std::vector <NonlinearVariableName>>("InputVariables"))
 {
+  _supplied_vars.insert(name());
+  const std::set<std::string> temp = _nn_obj.getRequestedItems();
+  _supplied_vars.insert(temp.begin(),temp.end());
+
+
+  for (auto it=_supplied_vars.begin(); it != _supplied_vars.end(); ++it)
+    {
+      std::cout << "\n IC dependencies " << *it;
+    }
+  // _depend_vars = _nn_obj.getRequestedItems() ;
    // _nn_obj->getRequestedItems();
   // const std::set<std::string> & requested_items = ;
 
@@ -37,4 +47,11 @@ NeuralNetworkIC::value(const Point & p)
 {
   Real value = 10.0;
   return _nn_obj.eval();
+}
+
+const std::set<std::string> &
+NeuralNetworkIC::getRequestedItems()
+{
+  // std::cout << "IC dependencies are being checked!!!";
+  return _depend_vars;
 }

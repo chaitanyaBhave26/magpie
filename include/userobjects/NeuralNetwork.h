@@ -30,11 +30,12 @@ public:
   virtual void threadJoin(const UserObject & y) override;
   void getWeights();
   // void NN_eval();
+  const std::set<std::string> & getRequestedItems() const;
   // const std::set<std::string> & getRequestedItems() override;
   // virtual const std::set<std::string> getRequestedItems() override;
   // virtual Real spatialValue(const Point & p) const override {return calc_spatial_value(p);}
   Real eval() const;
-  std::set<std::string> _supplied_vars;
+  // std::set<std::string> _supplied_vars;
 
   // const Point & p;
 
@@ -64,6 +65,8 @@ protected:
 
   std::vector<std::vector <std::vector <Real>>> _weights;
   std::vector< std::vector <Real>> _bias;
+  std::set<std::string> _depend_vars;
+  std::vector<std::string> _ic_dependencies;
 
   enum class ActivationFunction
   {
