@@ -27,9 +27,9 @@ NeuralNetworkIC::NeuralNetworkIC(const InputParameters & parameters)
     _nn_obj(getUserObject<NeuralNetwork>("NeuralNetwork_user_object")),
     _var_names(getParam<std::vector <NonlinearVariableName>>("InputVariables"))
 {
-  _supplied_vars.insert(name());
+  _depend_vars.insert(name());
   const std::set<std::string> temp = _nn_obj.getRequestedItems();
-  _supplied_vars.insert(temp.begin(),temp.end());
+  _depend_vars.insert(temp.begin(),temp.end());
 
 
   for (auto it=_supplied_vars.begin(); it != _supplied_vars.end(); ++it)

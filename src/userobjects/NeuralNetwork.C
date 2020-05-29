@@ -7,17 +7,8 @@
 //* Licensed under LGPL 2.1, please see LICENSE for details
 //* https://www.gnu.org/licenses/lgpl-2.1.html
 
-// #include "MooseMesh.h"
-// #include "Conversion.h"
-// #include "NonlinearSystem.h"
-// #include <Eigen/Dense>
 #include "NeuralNetwork.h"
 #include "MooseEnum.h"
-// #include <fstream>
-// #include "libmesh/mesh_tools.h"
-// #include "libmesh/point.h"
-// #include "SystemBase.h"
-
 
 registerMooseObject("MagpieApp", NeuralNetwork);
 
@@ -63,7 +54,6 @@ NeuralNetwork::NeuralNetwork(const InputParameters & parameters)
 
   //open the NN weights file
   setWeights();
-  // unsigned int n_variables = _variables.size();
   _inputs.resize(_D_in);
   _depend_vars.insert(name());
   for(unsigned int i =0; i < _fe_vars.size(); ++i)
@@ -76,20 +66,9 @@ NeuralNetwork::NeuralNetwork(const InputParameters & parameters)
     {
       _depend_vars.insert(_ic_dependencies[i]);
     }
-  // _var(_sys.getActualFieldVariable(parameters.get<THREAD_ID>("_tid"), _variables[0]
-                                        // );
-
-// ApplyLinearInput();
-  //convert
 
 }
-//
-const std::set<std::string> &
-NeuralNetwork::getRequestedItems()  const
-{
-  // std::cout << "Someone asked for this";
-  return _depend_vars;
-}
+
 void NeuralNetwork::setWeights()
   {
     std::ifstream ifile;
@@ -102,8 +81,6 @@ void NeuralNetwork::setWeights()
 
     unsigned int line_no = 0;
 
-    // _weights.resize(_N);
-
     DenseMatrix<Real> _W_input(_H,_D_in);
     DenseMatrix<Real> _bias_input(1,_H);
     DenseMatrix<Real> _W_output(_D_out,_H);
@@ -115,7 +92,7 @@ void NeuralNetwork::setWeights()
         for (std::size_t j=0; j < _D_in; j++)
           {
             if (!(ifile >> _W_input(i,j) ) )
-              mooseError("Error reading weights from file",_weights_file);
+                mooseError("Error reading weights from file",_weights_file);
 
           }
       }
@@ -186,62 +163,76 @@ NeuralNetwork::finalize(/* arguments */) {
 
 void
 NeuralNetwork::execute(/* arguments */) {
-  /* code */
-  // retval = eval
-  // unsigned int nodeID = _current_node->id();
-  // unsigned int ii = map_MOOSE2Ext(*_current_node);
-  // _ext_data[ii] = _u[0];
-  // auto _var_test = ;
-  // std::cout<< _fe_vars[0]->name() << ", ";
+
 }
 
 void
 NeuralNetwork::initialize(/* arguments */) {
-  /* code */
 }
 void
 NeuralNetwork::threadJoin(const UserObject & /*y*/)
 {
-  // I don't know what to do with this yet.
+}
+
+const std::set<std::string> &
+NeuralNetwork::getRequestedItems()  const
+{
+  return _depend_vars;
 }
 
 Real
 NeuralNetwork::eval( ) const
 {
 
-  // NN_eval();
-  // std::vector<Real> ip_vect;
-  // std::vector<Real> lin_output;
-  // for (int i =0; i<_D_in; ++i)
-  //   {
-  //     auto *temp = _inputs[i];
-  //     ip_vect.push_back(temp[0][0]);
-  //   }
-  // ApplyLinearInput(ip_vect,lin_output);
-  //
-  // //Apply sigmoids
-  // for (int j=0; j < _N; ++j)
-  // {
-  //   // std::cout << "Layer" << j << ":\n";
-  //   switch (_activation_function)
-  //   {
-  //     case ActivationFunction::SIGMOID:
-  //       for (int i =0; i < _H; ++i)
-  //         {
-  //           Real temp = 1/(1 + std::exp(-1*lin_output[i]) );
-  //           lin_output[i] = temp;
-  //           // std::cout << temp << "\t";
-  //         }
-  //     case ActivationFunction::TANH:
-  //       std::cout << "Not yet implemented";
-  //         // std::cout << "\n";
-  //   }
-  // }
-  //
-  // Real final_output;
-  // ApplyLinearOutput(lin_output,final_output);
-  // return final_output;
-  return 1.0;
+  DenseMatrix<Real> input(1,_D_in);
+  DenseMatrix<Real> feed_forward(1,_H);
+
+  for (std::size_t i =0; i<_D_in; ++i)
+    {
+      auto *temp = _inputs[i];
+      input(0,i)  = temp[0][0];
+    }
+
+//Feed forward input linear neurons
+  std::cout << "Input state: ";
+  std::cout << input.m() << ", " << input.n() << "\n " << _weights[0].m() << ", " << _weights[0].n();
+
+  input.left_multiply_transpose(_weights[0]);
+  input.add(1,_bias[0]);
+
+  std::cout << "\n After input feed forward: ";
+  std::cout << input.m() << ", " << input.n();
+
+
+//Feed forward hidden neurons
+  for (int n=0; n < _N; ++n)
+  {
+    switch (_activation_function)
+    {
+      case ActivationFunction::SIGMOID:
+        for (std::size_t i =0; i < input.m(); ++i)
+          {
+            for (std::size_t j =0; j < input.n(); ++j)
+              {
+                Real temp = 1/(1 + std::exp(-1*input(i,j)));
+                input(i,j)=temp;
+              }
+          }
+          std::cout << "\n After SIGMOID feed forward: ";
+          std::cout << input.m() << ", " << input.n();
+
+
+
+    }
+  }
+
+
+  //feed forward output LINEAR layer
+  auto i = _weights.size() -1;
+  std::cout << input.m() << ", " << input.n() << "\n " << _weights[i].m() << ", " << _weights[i].n();
+  input.left_multiply_transpose(_weights[i]);
+  input.add(1,_bias[i]);
+  return input(0,0);
 }
 
 // void
