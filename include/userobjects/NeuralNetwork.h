@@ -41,7 +41,7 @@ protected:
   std::vector<const VariableValue *> _inputs;
   std::vector<MooseVariableFEBase *> _fe_vars;
   std::vector<DenseMatrix<Real>> _weights;
-  std::vector<DenseMatrix<Real>> _bias;
+  std::vector<DenseVector<Real>> _bias;
   std::set<std::string> _depend_vars;
 
   enum class ActivationFunction
@@ -51,4 +51,6 @@ protected:
     TANH,
     LINEAR
   } _activation_function;
+
+
 };
