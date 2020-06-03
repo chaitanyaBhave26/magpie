@@ -209,7 +209,6 @@
   #   variable = c_Ni_metal
   #   InputVariables = 'c_Ni'
   #   NeuralNetwork_user_object = neuron_test
-  #
   # [../]
   [./eta_metal_inital]
     type = SmoothCircleIC
@@ -435,8 +434,8 @@
   compute_scaling_once = false
   scaling_group_variables = eta
   # scaling_group_variables = ' w_Ni w_Cr; eta'
-  dtmax = 500.0
-  end_time = 8.6e4
+  dtmax = 0.05#500.0
+  end_time = 1#8.6e4
   [./TimeStepper]
     type = IterationAdaptiveDT
     dt = 1e-5
@@ -447,8 +446,16 @@
   [../]
   # num_steps = 1
 []
+[Postprocessors]
+  [./elapsed]
+    type = PerfGraphData
+    section_name = "Root"
+    data_type = total
+  [../]
+[]
 
 [Outputs]
   exodus = true
   perf_graph = true
+  csv = true
 []

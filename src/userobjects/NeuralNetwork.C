@@ -73,9 +73,9 @@ NeuralNetwork::setWeights()
   unsigned int line_no = 0;
 
   DenseMatrix<Real> _W_input(_H, _D_in);
-  DenseMatrix<Real> _bias_input(1, _H);
+  DenseVector<Real> _bias_input(_H);
   DenseMatrix<Real> _W_output(_D_out, _H);
-  DenseMatrix<Real> _bias_output(1, _D_out);
+  DenseVector<Real> _bias_output(_D_out);
 
   // Read input LINEAR neuron weights
   for (std::size_t i = 0; i < _H; i++)
@@ -88,18 +88,16 @@ NeuralNetwork::setWeights()
   }
   for (std::size_t i = 0; i < _H; i++)
   {
-    if (!(ifile >> _bias_input(0, i)))
+    if (!(ifile >> _bias_input(i)))
       mooseError("Error reading  INPUT bias from file", _weights_file);
   }
   _weights.push_back(_W_input);
   _bias.push_back(_bias_input);
 
-  // CHECK if hidden neuron type has weights
-
-    for (int n = 0; n < _N -1; ++n) // For each hidden layer
+  for (int n = 0; n < _N -1; ++n) // For each hidden layer
     {
       DenseMatrix<Real> _W_hidden(_H, _H);
-      DenseMatrix<Real> _bias_hidden(1, _H);
+      DenseVector<Real> _bias_hidden(_H);
 
       for (std::size_t i = 0; i < _H; i++)
       {
@@ -111,7 +109,7 @@ NeuralNetwork::setWeights()
       }
       for (std::size_t i = 0; i < _H; i++)
       {
-        if (!(ifile >> _bias_hidden(0, i)))
+        if (!(ifile >> _bias_hidden(i)))
           mooseError("Error reading HIDDEN bias from file", _weights_file);
       }
       _weights.push_back(_W_hidden);
@@ -129,15 +127,16 @@ NeuralNetwork::setWeights()
   }
   for (unsigned int i = 0; i < _D_out; i++)
   {
-    if (!(ifile >> _bias_output(0, i)))
+    if (!(ifile >> _bias_output(i) ))
       mooseError("Error reading OUTPUT bias from file", _weights_file);
   }
   _weights.push_back(_W_output);
   _bias.push_back(_bias_output);
+
 }
 
-void NeuralNetwork::finalize(/* arguments */)
-{ /* code */
+void NeuralNetwork::finalize()
+{
 }
 
 void NeuralNetwork::execute(/* arguments */) {}
@@ -157,55 +156,65 @@ NeuralNetwork::getRequestedItems() const
 Real
 NeuralNetwork::eval() const
 {
-
-  DenseMatrix<Real> input(1, _D_in);
-  DenseMatrix<Real> feed_forward(1, _H);
+  DenseVector<Real> input(_D_in);
+  DenseVector<Real> feed_forward(_H);
+  DenseVector<Real> temp(_H);
+  DenseVector<Real> output(_D_out);
 
   for (std::size_t i = 0; i < _D_in; ++i)
   {
     auto * temp = _inputs[i];
-    input(0, i) = temp[0][0];
+    input(i) = temp[0][0];
   }
 
-  // Feed forward input linear neurons
-  input.right_multiply_transpose(_weights[0]);
-  input.add(1, _bias[0]);
+  // Apply input layer weights
 
-  // Feed forward hidden neurons
-  for (int n = 0; n < _N; ++n)
+  for (std::size_t i =0; i < _H; ++i)
+  {
+    feed_forward(i) = 0;
+    for (std::size_t j = 0; j < _D_in; ++j)
+      feed_forward(i)+=input(j)*_weights[0](i,j);
+    feed_forward(i)+=_bias[0](i);
+  }
+
+  for (std::size_t n = 0; n < _N; ++n)
   {
     switch (_activation_function)
-    {
-      case ActivationFunction::SIGMOID:
       {
-        for (std::size_t i = 0; i < input.m(); ++i)
-        {
-          for (std::size_t j = 0; j < input.n(); ++j)
-          {
-            Real temp = 1 / (1 + std::exp(-1 * input(i, j)));
-            input(i, j) = temp;
-          }
-        }
+        case ActivationFunction::SIGMOID:
+          for (std::size_t i = 0; i < _H; ++i)
+            feed_forward(i) = 1 / (1 + std::exp(-1 * feed_forward(i) ));
+
+        case ActivationFunction::TANH:
+          for (std::size_t i = 0; i < _H; ++i)
+            feed_forward(i) = std::tanh(feed_forward(i) );
       }
-      case ActivationFunction::TANH:
-      {
-        for (std::size_t i = 0; i < input.m(); ++i)
+
+      //bail out of linear layer if we are at last hidden layer
+      if (n+1 == _N)
+        break;
+      //Applying connectivity linear layer
+      for (std::size_t i =0; i < _H; ++i)
         {
-          for (std::size_t j = 0; j < input.n(); ++j)
-          {
-            Real temp = std::tanh(input(i, j));
-            input(i, j) = temp;
-          }
+        temp(i) = 0;
+        for (std::size_t j = 0; j < _H; ++j)
+          temp(i) += feed_forward(j)*_weights[n+1](j,i);
+        temp(i)+= _bias[n+1](i);
         }
-      }
-    }
-    input.right_multiply_transpose(_weights[n+1]);
-    input.add(1, _bias[n+1]);
+      feed_forward = temp;
+
   }
 
-    // feed forward output LINEAR layer
-    // auto i = _weights.size() - 1;
-    // input.right_multiply_transpose(_weights[i]);
-    // input.add(1, _bias[i]);
-    return input(0, 0);
+  //Apply final output layer
+  auto n = _weights.size() - 1;
+  for (std::size_t i =0; i < _D_out; ++i)
+  {
+    output(i) = 0;
+    for (std::size_t j = 0; j < _H; ++j)
+      output(i)+=feed_forward(j)*_weights[n](i,j);
+    output(i)+=_bias[n](i);
+  }
+
+
+    return output(0);
   }
