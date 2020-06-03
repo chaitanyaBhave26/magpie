@@ -83,43 +83,40 @@ NeuralNetwork::setWeights()
     for (std::size_t j = 0; j < _D_in; j++)
     {
       if (!(ifile >> _W_input(i, j)))
-        mooseError("Error reading weights from file", _weights_file);
+        mooseError("Error reading INPUT weights from file", _weights_file);
     }
   }
   for (std::size_t i = 0; i < _H; i++)
   {
     if (!(ifile >> _bias_input(0, i)))
-      mooseError("Error reading input bias from file", _weights_file);
+      mooseError("Error reading  INPUT bias from file", _weights_file);
   }
   _weights.push_back(_W_input);
   _bias.push_back(_bias_input);
 
   // CHECK if hidden neuron type has weights
-  switch (_activation_function)
-  {
-    case ActivationFunction::LINEAR:
-      for (int n = 0; n < _N; ++n) // For each hidden layer
-      {
-        DenseMatrix<Real> _W_hidden(_H, _H);
-        DenseMatrix<Real> _bias_hidden(1, _H);
 
-        for (std::size_t i = 0; i < _H; i++)
+    for (int n = 0; n < _N -1; ++n) // For each hidden layer
+    {
+      DenseMatrix<Real> _W_hidden(_H, _H);
+      DenseMatrix<Real> _bias_hidden(1, _H);
+
+      for (std::size_t i = 0; i < _H; i++)
+      {
+        for (std::size_t j = 0; j < _H; j++)
         {
-          for (std::size_t j = 0; j < _H; j++)
-          {
-            if (!(ifile >> _W_hidden(i, j)))
-              mooseError("Error reading weights from file", _weights_file);
-          }
+          if (!(ifile >> _W_hidden(i, j)))
+            mooseError("Error reading HIDDEN weights from file", _weights_file);
         }
-        for (std::size_t i = 0; i < _H; i++)
-        {
-          if (!(ifile >> _bias_hidden(0, i)))
-            mooseError("Error reading input bias from file", _weights_file);
-        }
-        _weights.push_back(_W_hidden);
-        _bias.push_back(_bias_hidden);
       }
-  }
+      for (std::size_t i = 0; i < _H; i++)
+      {
+        if (!(ifile >> _bias_hidden(0, i)))
+          mooseError("Error reading HIDDEN bias from file", _weights_file);
+      }
+      _weights.push_back(_W_hidden);
+      _bias.push_back(_bias_hidden);
+    }
 
   // Read OUTPUT LINEAR neuron weights
   for (unsigned int i = 0; i < _D_out; i++)
@@ -127,13 +124,13 @@ NeuralNetwork::setWeights()
     for (unsigned int j = 0; j < _H; j++)
     {
       if (!(ifile >> _W_output(i, j)))
-        mooseError("Error reading weights from file", _weights_file);
+        mooseError("Error reading OUTPUT weights from file", _weights_file);
     }
   }
   for (unsigned int i = 0; i < _D_out; i++)
   {
     if (!(ifile >> _bias_output(0, i)))
-      mooseError("Error reading input bias from file", _weights_file);
+      mooseError("Error reading OUTPUT bias from file", _weights_file);
   }
   _weights.push_back(_W_output);
   _bias.push_back(_bias_output);
@@ -202,10 +199,13 @@ NeuralNetwork::eval() const
         }
       }
     }
+    input.right_multiply_transpose(_weights[n+1]);
+    input.add(1, _bias[n+1]);
+  }
 
     // feed forward output LINEAR layer
-    auto i = _weights.size() - 1;
-    input.right_multiply_transpose(_weights[i]);
-    input.add(1, _bias[i]);
+    // auto i = _weights.size() - 1;
+    // input.right_multiply_transpose(_weights[i]);
+    // input.add(1, _bias[i]);
     return input(0, 0);
   }
