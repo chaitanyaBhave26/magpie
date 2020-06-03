@@ -204,13 +204,13 @@
 []
 
 [ICs]
-  [./c_ni_metal_initial]
-    type = NeuralNetworkIC
-    variable = c_Ni_metal
-    InputVariables = 'c_Ni'
-    NeuralNetwork_user_object = neuron_test
-
-  [../]
+  # [./c_ni_metal_initial]
+  #   type = NeuralNetworkIC
+  #   variable = c_Ni_metal
+  #   InputVariables = 'c_Ni'
+  #   NeuralNetwork_user_object = neuron_test
+  #
+  # [../]
   [./eta_metal_inital]
     type = SmoothCircleIC
     variable = 'eta'
@@ -233,16 +233,16 @@
       invalue = '0.8'
       outvalue = 0.02#'0.003342064232754377'
     [../]
-  # [./c_Ni_metal_inital]
-  #   type = SmoothCircleIC
-  #   variable = 'c_Ni_metal'
-  #   int_width = 20
-  #   x1 = 0
-  #   y1 = 0
-  #   radius = 100
-  #   invalue = '0.8'
-  #   outvalue = '0.99'
-  # [../]
+  [./c_Ni_metal_inital]
+    type = SmoothCircleIC
+    variable = 'c_Ni_metal'
+    int_width = 20
+    x1 = 0
+    y1 = 0
+    radius = 100
+    invalue = '0.8'
+    outvalue = '0.99'
+  [../]
 
 
 
@@ -445,7 +445,7 @@
     growth_factor = 1.1
     cutback_factor = 0.8
   [../]
-  num_steps = 0
+  # num_steps = 1
 []
 
 [Outputs]
