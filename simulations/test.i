@@ -4,7 +4,7 @@
 [Mesh]
   type = GeneratedMesh
   dim  = 1
-  nx   = 40
+  nx   = 20
   xmax = 1000
   ny   = 1
   ymax = 1000
@@ -24,7 +24,7 @@
     D_in = 2
     D_out = 1
     H = 20
-    activation_function = "SIGMOID"
+    activation_function = "TANH"
     weights_file = "/home/chaitanya/projects/moose/python/ExodusNNTrainer/moose_NN_file.txt"
     # variables = 'c_Ni eta'
     variable = 'c_Ni eta'
@@ -204,12 +204,12 @@
 []
 
 [ICs]
-  # [./c_ni_metal_initial]
-  #   type = NeuralNetworkIC
-  #   variable = c_Ni_metal
-  #   InputVariables = 'c_Ni'
-  #   NeuralNetwork_user_object = neuron_test
-  # [../]
+  [./c_ni_metal_initial]
+    type = NeuralNetworkIC
+    variable = c_Ni_metal
+    InputVariables = 'c_Ni eta'
+    NeuralNetwork_user_object = neuron_test
+  [../]
   [./eta_metal_inital]
     type = SmoothCircleIC
     variable = 'eta'
@@ -225,23 +225,23 @@
   [./c_global_inital]
       type = SmoothCircleIC
       variable = 'c_Ni'
-      int_width = 20
+      int_width = 10
       x1 = 0
       y1 = 0
       radius = 100
       invalue = '0.8'
       outvalue = 0.02#'0.003342064232754377'
     [../]
-  [./c_Ni_metal_inital]
-    type = SmoothCircleIC
-    variable = 'c_Ni_metal'
-    int_width = 20
-    x1 = 0
-    y1 = 0
-    radius = 100
-    invalue = '0.8'
-    outvalue = '0.99'
-  [../]
+  # [./c_Ni_metal_inital]
+  #   type = SmoothCircleIC
+  #   variable = 'c_Ni_metal'
+  #   int_width = 20
+  #   x1 = 0
+  #   y1 = 0
+  #   radius = 100
+  #   invalue = '0.8'
+  #   outvalue = '0.99'
+  # [../]
 
 
 
@@ -252,7 +252,7 @@
     x1 = 0
     y1 = 0
     radius = 100
-    invalue = '1e-4'
+    invalue = 0.02#'1.5e-4'
     outvalue = 0.02
   [../]
 
@@ -313,7 +313,6 @@
       prop_names =  'kB            T     n  E0_Ni_metal  E0_Ni_melt    E0_N_metal   E0_N_melt  E0_Cr_metal  E0_Cr_melt k_metal k_melt'
       prop_values = '8.6173324e-5  1000  2  -0.4643      0.4817        -0.5441      -2.9913     -0.32       -0.88      3       3'
     [../]
-
     #PARAMETERS
     [./kappa] #assume that three interfaces having the same interfacial energy and thickness
       type = ParsedMaterial
@@ -432,7 +431,7 @@
   dtmin = 1e-7
   automatic_scaling = true
   compute_scaling_once = false
-  scaling_group_variables = eta
+  scaling_group_variables = 'eta'
   # scaling_group_variables = ' w_Ni w_Cr; eta'
   dtmax = 0.05#500.0
   end_time = 1#8.6e4
@@ -444,7 +443,7 @@
     growth_factor = 1.1
     cutback_factor = 0.8
   [../]
-  # num_steps = 1
+  # num_steps = 0
 []
 [Postprocessors]
   [./elapsed]

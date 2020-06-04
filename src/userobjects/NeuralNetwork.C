@@ -154,27 +154,21 @@ NeuralNetwork::getRequestedItems() const
 }
 
 Real
-NeuralNetwork::eval() const
+NeuralNetwork::eval(DenseVector<Real> & input, std::size_t op_id ) const
 {
-  DenseVector<Real> input(_D_in);
+  // DenseVector<Real> input(_D_in);
   DenseVector<Real> feed_forward(_H);
   DenseVector<Real> temp(_H);
   DenseVector<Real> output(_D_out);
 
-  for (std::size_t i = 0; i < _D_in; ++i)
-  {
-    auto * temp = _inputs[i];
-    input(i) = temp[0][0];
-  }
-
   // Apply input layer weights
-
   for (std::size_t i =0; i < _H; ++i)
   {
     feed_forward(i) = 0;
     for (std::size_t j = 0; j < _D_in; ++j)
       feed_forward(i)+=input(j)*_weights[0](i,j);
     feed_forward(i)+=_bias[0](i);
+
   }
 
   for (std::size_t n = 0; n < _N; ++n)
@@ -198,7 +192,7 @@ NeuralNetwork::eval() const
         {
         temp(i) = 0;
         for (std::size_t j = 0; j < _H; ++j)
-          temp(i) += feed_forward(j)*_weights[n+1](j,i);
+          temp(i) += feed_forward(j)*_weights[n+1](i,j);
         temp(i)+= _bias[n+1](i);
         }
       feed_forward = temp;
@@ -214,7 +208,13 @@ NeuralNetwork::eval() const
       output(i)+=feed_forward(j)*_weights[n](i,j);
     output(i)+=_bias[n](i);
   }
-
-
-    return output(0);
+    if (output(op_id) < 0.8)
+      {
+        return 0.8;
+      }
+    else if (output(op_id) > 0.99)
+      {
+        return 0.99;
+      }
+    return output( op_id);
   }
