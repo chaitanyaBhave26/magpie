@@ -27,7 +27,7 @@ public:
   virtual void finalize() override;
   virtual void threadJoin(const UserObject & y) override;
   const std::set<std::string> & getRequestedItems() const;
-  Real eval() const;
+  Real eval(DenseVector<Real> & input, std::size_t op_idx) const;
 
 protected:
   void setWeights();
