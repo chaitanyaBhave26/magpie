@@ -149,6 +149,7 @@ NeuralNetwork::eval(DenseVector<Real> & input, std::size_t op_id ) const
           for (std::size_t i = 0; i < _H; ++i)
             feed_forward(i) = std::tanh(feed_forward(i) );
       }
+      
 
       //bail out of linear layer if we are at last hidden layer
       if (n+1 == _N)
