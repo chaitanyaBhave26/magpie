@@ -7,26 +7,25 @@
 /**********************************************************************/
 
 #pragma once
-#include "NodalUserObject.h"
+#include "GeneralUserObject.h"
 #include "MooseVariableInterface.h"
 
 // forward declarations
 class NeuralNetwork;
 
 template <>
-InputParameters validParams<NodalUserObject>();
+InputParameters validParams<GeneralUserObject>();
 
-class NeuralNetwork : public NodalUserObject, public MooseVariableInterface<Real>
+class NeuralNetwork : public GeneralUserObject
 {
 public:
   static InputParameters validParams();
 
   NeuralNetwork(const InputParameters & parameters);
-  virtual void initialize() override;
-  virtual void execute() override;
-  virtual void finalize() override;
-  virtual void threadJoin(const UserObject & y) override;
-  const std::set<std::string> & getRequestedItems() const;
+  virtual void initialize() override {}
+  virtual void execute() override {}
+  virtual void finalize() override {}
+  virtual void threadJoin(const UserObject & y) override {}
   Real eval(DenseVector<Real> & input, std::size_t op_idx) const;
 
 protected:
@@ -38,11 +37,8 @@ protected:
   unsigned int _N;
 
   FileName _weights_file;
-  std::vector<const VariableValue *> _inputs;
-  std::vector<MooseVariableFEBase *> _fe_vars;
   std::vector<DenseMatrix<Real>> _weights;
   std::vector<DenseVector<Real>> _bias;
-  std::set<std::string> _depend_vars;
 
   enum class ActivationFunction
   {
@@ -51,6 +47,5 @@ protected:
     TANH,
     LINEAR
   } _activation_function;
-
 
 };

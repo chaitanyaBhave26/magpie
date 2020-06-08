@@ -23,7 +23,7 @@
     type = NeuralNetwork
     D_in = 2
     D_out = 1
-    H = 20
+    H = 5
     activation_function = "TANH"
     weights_file = "/home/chaitanya/projects/moose/python/ExodusNNTrainer/moose_NN_file.txt"
     # variables = 'c_Ni eta'

@@ -27,12 +27,10 @@ NeuralNetworkIC::validParams()
 NeuralNetworkIC::NeuralNetworkIC(const InputParameters & parameters)
   : InitialCondition(parameters),
     _nn_obj(getUserObject<NeuralNetwork>("NeuralNetwork_user_object"))
-    // _var_names(getParam<std::vector<NonlinearVariableName>>("InputVariables"))
 {
   _depend_vars.insert(name());
-  const std::set<std::string> temp = _nn_obj.getRequestedItems();
-  _depend_vars.insert(temp.begin(), temp.end());
   _n_inputs = coupledComponents("InputVariables");
+
   _input_vect.resize(_n_inputs);
   for (unsigned int i = 0; i < _n_inputs; ++i)
     _input_vect[i] = &coupledValue("InputVariables", i);
@@ -46,10 +44,7 @@ NeuralNetworkIC::value(const Point & p)
   {
     auto * temp = _input_vect[i];
     _input_layer(i) = temp[0][0];
-    std::cout << _input_layer(i) << ", ";
-  } std::cout << " --> ";
-  Real temp = _nn_obj.eval(_input_layer, 0);
-  std::cout << temp << "\n";
+  }
   return _nn_obj.eval(_input_layer, 0);
 }
 

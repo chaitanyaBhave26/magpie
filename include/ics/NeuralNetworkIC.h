@@ -25,5 +25,4 @@ protected:
   const NeuralNetwork & _nn_obj;
   std::vector<const VariableValue *> _input_vect;
   unsigned int _n_inputs;
-  // std::vector<NonlinearVariableName> _var_names;
 };
