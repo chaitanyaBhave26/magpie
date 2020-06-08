@@ -15,7 +15,7 @@ template <>
 InputParameters
 validParams<NeuralNetwork>()
 {
-  InputParameters params = NodalUserObject::validParams();
+  InputParameters params = GeneralUserObject::validParams();
   params.addClassDescription("Reconstructs a neural network from a file and evaluates it");
   params.addRequiredParam<unsigned int>("H", "Number of neurons in each hidden layer");
   params.addRequiredParam<unsigned int>("N", "Number of hidden layers");
@@ -31,32 +31,17 @@ validParams<NeuralNetwork>()
 }
 
 NeuralNetwork::NeuralNetwork(const InputParameters & parameters)
-  : NodalUserObject(parameters),
+  : GeneralUserObject(parameters),
     _H(getParam<unsigned int>("H")),
     _N(getParam<unsigned int>("N")),
     _D_in(getParam<unsigned int>("D_in")),
     _D_out(getParam<unsigned int>("D_out")),
-    _weights_file(getParam<FileName>("weights_file")),
-    _activation_function(
-        getParam<MooseEnum>("activation_function").template getEnum<ActivationFunction>()),
-    MooseVariableInterface<Real>(this,
-                                 false,
-                                 "variable",
-                                 Moose::VarKindType::VAR_ANY,
-                                 Moose::VarFieldType::VAR_FIELD_STANDARD),
-    _fe_vars(getCoupledMooseVars())
+    _activation_function(getParam<MooseEnum>("activation_function").template getEnum<ActivationFunction>()),
+    _weights_file(getParam<FileName>("weights_file"))
 {
 
   // open the NN weights file
   setWeights();
-  _inputs.resize(_D_in);
-  _depend_vars.insert(name());
-  for (unsigned int i = 0; i < _D_in; ++i)
-  {
-    auto temp = _fe_vars[i]->name();
-    _depend_vars.insert(temp);
-    _inputs[i] = &coupledValue("variable", i);
-  }
 }
 
 void
@@ -135,28 +120,9 @@ NeuralNetwork::setWeights()
 
 }
 
-void NeuralNetwork::finalize()
-{
-}
-
-void NeuralNetwork::execute(/* arguments */) {}
-
-void NeuralNetwork::initialize(/* arguments */) {}
-void
-NeuralNetwork::threadJoin(const UserObject & /*y*/)
-{
-}
-
-const std::set<std::string> &
-NeuralNetwork::getRequestedItems() const
-{
-  return _depend_vars;
-}
-
 Real
 NeuralNetwork::eval(DenseVector<Real> & input, std::size_t op_id ) const
 {
-  // DenseVector<Real> input(_D_in);
   DenseVector<Real> feed_forward(_H);
   DenseVector<Real> temp(_H);
   DenseVector<Real> output(_D_out);
@@ -208,13 +174,5 @@ NeuralNetwork::eval(DenseVector<Real> & input, std::size_t op_id ) const
       output(i)+=feed_forward(j)*_weights[n](i,j);
     output(i)+=_bias[n](i);
   }
-    if (output(op_id) < 0.8)
-      {
-        return 0.8;
-      }
-    else if (output(op_id) > 0.99)
-      {
-        return 0.99;
-      }
-    return output( op_id);
+  return output( op_id);
   }
