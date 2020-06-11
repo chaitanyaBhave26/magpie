@@ -69,6 +69,7 @@ NeuralNetwork::setWeights()
     {
       if (!(ifile >> _W_input(i, j)))
         mooseError("Error reading INPUT weights from file", _weights_file);
+      std::cout << _W_input(i,j);
     }
   }
   for (std::size_t i = 0; i < _H; i++)
@@ -149,7 +150,6 @@ NeuralNetwork::eval(DenseVector<Real> & input, std::size_t op_id ) const
           for (std::size_t i = 0; i < _H; ++i)
             feed_forward(i) = std::tanh(feed_forward(i) );
       }
-      
 
       //bail out of linear layer if we are at last hidden layer
       if (n+1 == _N)
