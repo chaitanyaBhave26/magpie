@@ -8,6 +8,7 @@
 
 #include "NeuralNetwork.h"
 #include "MooseEnum.h"
+#include "pugixml.h"
 
 registerMooseObject("MagpieApp", NeuralNetwork);
 
@@ -17,163 +18,175 @@ validParams<NeuralNetwork>()
 {
   InputParameters params = GeneralUserObject::validParams();
   params.addClassDescription("Reconstructs a neural network from a file and evaluates it");
-  params.addRequiredParam<unsigned int>("H", "Number of neurons in each hidden layer");
-  params.addRequiredParam<unsigned int>("N", "Number of hidden layers");
-  params.addRequiredParam<unsigned int>("D_in", "Number of inputs to neural net");
-  params.addRequiredParam<unsigned int>("D_out", "Number of outputs from neural net");
   params.addRequiredParam<FileName>("weights_file", "Name of the file with the neuron weights");
-  MooseEnum activationFunctionEnum("SIGMOID SOFTSIGN TANH LINEAR", "SIGMOID");
-  params.template addParam<MooseEnum>("activation_function",
-                                      activationFunctionEnum,
-                                      "Name of the hidden neuron activation function");
-  params.addRequiredCoupledVar("variable", "Name of the variable this object operates on");
   return params;
 }
 
 NeuralNetwork::NeuralNetwork(const InputParameters & parameters)
   : GeneralUserObject(parameters),
-    _H(getParam<unsigned int>("H")),
-    _N(getParam<unsigned int>("N")),
-    _D_in(getParam<unsigned int>("D_in")),
-    _D_out(getParam<unsigned int>("D_out")),
-    _activation_function(getParam<MooseEnum>("activation_function").template getEnum<ActivationFunction>()),
-    _weights_file(getParam<FileName>("weights_file"))
+    _weightsFile(getParam<FileName>("weights_file")),
+    _layerActivationFunctionEnum(MultiMooseEnum("SIGMOID SOFTSIGN TANH LINEAR" ) )
 {
+  setXMLWeights();
 
-  // open the NN weights file
-  setWeights();
 }
-
-void
-NeuralNetwork::setWeights()
+void NeuralNetwork::setXMLWeights()
 {
   std::ifstream ifile;
-  std::string line;
-  ifile.open(_weights_file);
+  std::string file_dump;
+  pugi::xml_document doc;
+
+  ifile.open(_weightsFile);
   if (!ifile)
-  {
-    paramError("weights_file", "Unable to open file");
-  }
-
-  unsigned int line_no = 0;
-
-  DenseMatrix<Real> _W_input(_H, _D_in);
-  DenseVector<Real> _bias_input(_H);
-  DenseMatrix<Real> _W_output(_D_out, _H);
-  DenseVector<Real> _bias_output(_D_out);
-
-  // Read input LINEAR neuron weights
-  for (std::size_t i = 0; i < _H; i++)
-  {
-    for (std::size_t j = 0; j < _D_in; j++)
     {
-      if (!(ifile >> _W_input(i, j)))
-        mooseError("Error reading INPUT weights from file", _weights_file);
-      std::cout << _W_input(i,j);
+      paramError("Cannot read neural net file");
     }
-  }
-  for (std::size_t i = 0; i < _H; i++)
-  {
-    if (!(ifile >> _bias_input(i)))
-      mooseError("Error reading  INPUT bias from file", _weights_file);
-  }
-  _weights.push_back(_W_input);
-  _bias.push_back(_bias_input);
-
-  for (int n = 0; n < _N -1; ++n) // For each hidden layer
+  pugi::xml_parse_result result = doc.load(ifile);
+  if (!result)
     {
-      DenseMatrix<Real> _W_hidden(_H, _H);
-      DenseVector<Real> _bias_hidden(_H);
+      paramError("Cannot parse as XML file");
+    }
 
-      for (std::size_t i = 0; i < _H; i++)
-      {
-        for (std::size_t j = 0; j < _H; j++)
+pugi::xml_node root = doc.document_element();
+std::string activation_layers;
+
+ for (pugi::xml_node layer = root.child("LAYER"); layer; layer = layer.next_sibling("LAYER") )
+  {
+    std::size_t idx = layer.attribute("id").as_uint();
+    auto neuron_type = layer.child("TYPE").text().as_string();
+    _layerActivationFunctionEnum.push_back(neuron_type);
+
+    switch (_layerActivationFunctionEnum.get(idx))
+    {
+      case 0: //SIGMOID
+        break;
+      case 1: //SOFTSIGN
+        break;
+
+      case 2: //TANH
+        break;
+
+      case 3: //LINEAR
         {
-          if (!(ifile >> _W_hidden(i, j)))
-            mooseError("Error reading HIDDEN weights from file", _weights_file);
+          size_t m = layer.child("M").text().as_uint();
+          size_t n = layer.child("N").text().as_uint();
+
+          //Assigning neural net size data
+          if(idx==0)
+            {
+              _d_in = n;
+              _h = m;
+            }
+
+          _d_out = m;
+          _n = 1+idx;
+          std::cout << _d_in << _h << _d_out << _n << "\n";
+
+          DenseMatrix<Real> linear_weight(m,n);
+          DenseVector<Real> linear_bias(m);
+          std::istringstream W (layer.child("WEIGHTS").text().as_string() );
+          std::istringstream B (layer.child("BIAS").text().as_string() );
+
+          std::size_t S =0;
+          size_t j; size_t i =0;
+          for(std::string s; W >> s; )
+            {
+              j = S%n;
+              i = (S - j)/n;
+              linear_weight(i,j) = std::stod(s);
+              ++S;
+            }
+
+          S =0;
+          for(std::string s; B >> s; )
+            {
+              i = S%m;
+              linear_bias(i) = std::stod(s);
+              ++S;
+            }
+          _weights.push_back(linear_weight);
+          _bias.push_back(linear_bias);
+          break;
         }
-      }
-      for (std::size_t i = 0; i < _H; i++)
-      {
-        if (!(ifile >> _bias_hidden(i)))
-          mooseError("Error reading HIDDEN bias from file", _weights_file);
-      }
-      _weights.push_back(_W_hidden);
-      _bias.push_back(_bias_hidden);
     }
 
-  // Read OUTPUT LINEAR neuron weights
-  for (unsigned int i = 0; i < _D_out; i++)
-  {
-    for (unsigned int j = 0; j < _H; j++)
-    {
-      if (!(ifile >> _W_output(i, j)))
-        mooseError("Error reading OUTPUT weights from file", _weights_file);
     }
-  }
-  for (unsigned int i = 0; i < _D_out; i++)
-  {
-    if (!(ifile >> _bias_output(i) ))
-      mooseError("Error reading OUTPUT bias from file", _weights_file);
-  }
-  _weights.push_back(_W_output);
-  _bias.push_back(_bias_output);
 
 }
+
 
 Real
 NeuralNetwork::eval(DenseVector<Real> & input, std::size_t op_id ) const
 {
-  DenseVector<Real> feed_forward(_H);
-  DenseVector<Real> temp(_H);
-  DenseVector<Real> output(_D_out);
+  if (input.size()!= _d_in)
+    {
+      mooseError("Input vector size does not match input size for neural network");
+    }
+
+  DenseVector<Real> feed_forward(_h);
+  DenseVector<Real> temp(_h);
+  DenseVector<Real> output(_d_out);
 
   // Apply input layer weights
-  for (std::size_t i =0; i < _H; ++i)
+  for (std::size_t i =0; i < _h; ++i)
   {
     feed_forward(i) = 0;
-    for (std::size_t j = 0; j < _D_in; ++j)
+    for (std::size_t j = 0; j < _d_in; ++j)
       feed_forward(i)+=input(j)*_weights[0](i,j);
     feed_forward(i)+=_bias[0](i);
 
   }
 
-  for (std::size_t n = 0; n < _N; ++n)
+  std::size_t idx = 1; //tracks the index of weights to read
+  for (std::size_t n = 1; n < _n-1; ++n)
   {
-    switch (_activation_function)
-      {
-        case ActivationFunction::SIGMOID:
-          for (std::size_t i = 0; i < _H; ++i)
-            feed_forward(i) = 1 / (1 + std::exp(-1 * feed_forward(i) ));
 
-        case ActivationFunction::TANH:
-          for (std::size_t i = 0; i < _H; ++i)
+    switch (_layerActivationFunctionEnum.get(n))
+      {
+        case 0: //SIGMOID
+          for (std::size_t i = 0; i < _h; ++i)
+            feed_forward(i) = 1 / (1 + std::exp(-1 * feed_forward(i) ));
+          break;
+        case 1: //SOFTSIGN
+          break;
+
+        case 2: //TANH
+          for (std::size_t i = 0; i < _h; ++i)
             feed_forward(i) = std::tanh(feed_forward(i) );
+          break;
+
+        case 3: //LINEAR
+            {
+              for (std::size_t i =0; i < _h; ++i)
+                {
+                temp(i) = 0;
+                for (std::size_t j = 0; j < _h; ++j)
+                  temp(i) += feed_forward(j)*_weights[idx](i,j);
+                temp(i)+= _bias[idx](i);
+                }
+              feed_forward = temp;
+              idx+=1;
+              break;
+            }
+
       }
 
-      //bail out of linear layer if we are at last hidden layer
-      if (n+1 == _N)
-        break;
+
       //Applying connectivity linear layer
-      for (std::size_t i =0; i < _H; ++i)
-        {
-        temp(i) = 0;
-        for (std::size_t j = 0; j < _H; ++j)
-          temp(i) += feed_forward(j)*_weights[n+1](i,j);
-        temp(i)+= _bias[n+1](i);
-        }
-      feed_forward = temp;
+
 
   }
 
   //Apply final output layer
   auto n = _weights.size() - 1;
-  for (std::size_t i =0; i < _D_out; ++i)
+  for (std::size_t i =0; i < _d_out; ++i)
   {
     output(i) = 0;
-    for (std::size_t j = 0; j < _H; ++j)
+    for (std::size_t j = 0; j < _h; ++j)
       output(i)+=feed_forward(j)*_weights[n](i,j);
     output(i)+=_bias[n](i);
+    // if (output(i) > 0.9)
+    //   output(i)=0.9;
   }
-  return output( op_id);
+  return (output( op_id) );
   }

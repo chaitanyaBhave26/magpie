@@ -30,22 +30,16 @@ public:
 
 protected:
   void setWeights();
+  void setXMLWeights();
+  unsigned int _h;
+  unsigned int _d_in;
+  unsigned int _d_out;
+  unsigned int _n;
 
-  unsigned int _H;
-  unsigned int _D_in;
-  unsigned int _D_out;
-  unsigned int _N;
-
-  FileName _weights_file;
+  FileName _weightsFile;
   std::vector<DenseMatrix<Real>> _weights;
   std::vector<DenseVector<Real>> _bias;
 
-  enum class ActivationFunction
-  {
-    SIGMOID,
-    SOFTSIGN,
-    TANH,
-    LINEAR
-  } _activation_function;
+  MultiMooseEnum _layerActivationFunctionEnum;
 
 };

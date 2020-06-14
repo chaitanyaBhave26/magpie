@@ -21,12 +21,14 @@ NeuralNetworkIC::validParams()
       "NeuralNetwork_user_object",
       "Name of the neural network user object that evaluates the nodal value");
   params.addRequiredCoupledVar("InputVariables", "Names of the non-linear variables for inputting to the neural net");
+  params.addParam<std::size_t>("op_id",0,"Index of the output neuron that is used by the IC");
   return params;
 }
 
 NeuralNetworkIC::NeuralNetworkIC(const InputParameters & parameters)
   : InitialCondition(parameters),
-    _nn_obj(getUserObject<NeuralNetwork>("NeuralNetwork_user_object"))
+    _nn_obj(getUserObject<NeuralNetwork>("NeuralNetwork_user_object")),
+    _op_id(getParam<std::size_t>("op_id"))
 {
   _depend_vars.insert(name());
   _n_inputs = coupledComponents("InputVariables");
@@ -45,7 +47,7 @@ NeuralNetworkIC::value(const Point & p)
     auto * temp = _input_vect[i];
     _input_layer(i) = temp[0][0];
   }
-  return _nn_obj.eval(_input_layer, 0);
+  return _nn_obj.eval(_input_layer, _op_id);
 }
 
 const std::set<std::string> &
